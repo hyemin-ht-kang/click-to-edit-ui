@@ -1,19 +1,6 @@
 ---
 name: click-to-edit-ui
-description: >-
-  Set up a "click-to-identify" probe in a live browser (via the chrome-devtools
-  MCP) so the user can point at UI components by Alt-clicking them instead of
-  describing them in words, then request edits by referring to numbered
-  selections ("make ① bigger, hide ②, recolor ③"). Use this whenever the user
-  is iteratively editing a rendered web UI / HTML page / app open in Chrome and
-  would rather click on elements than describe them — triggers include "set up
-  the click probe", "let me click to show you what to change", "I'll point at
-  the components", "click-to-identify", "let me just click the things I want
-  edited", "point-and-edit this UI", or the start of any visual front-end
-  tweaking session against a page in the browser. Also use it to RE-ARM the
-  probe after a reload, and to READ which components the user clicked
-  (window.__probe.list()) before making edits. Prefer this over asking the user
-  to describe DOM elements in prose.
+description: Set up a "click-to-identify" probe in a live browser (via the chrome-devtools MCP) so the user can point at UI components by Alt-clicking them instead of describing them in words, then request edits by referring to numbered selections ("make ① bigger, hide ②, recolor ③"). Use this whenever the user is iteratively editing a rendered web UI / HTML page / app open in Chrome and would rather click on elements than describe them — triggers include "set up the click probe", "let me click to show you what to change", "I'll point at the components", "click-to-identify", "let me just click the things I want edited", "point-and-edit this UI", or the start of any visual front-end tweaking session against a page in the browser. Also use it to RE-ARM the probe after a reload, and to READ which components the user clicked (window.__probe.list()) before making edits. Prefer this over asking the user to describe DOM elements in prose.
 ---
 
 # Click-to-edit UI
