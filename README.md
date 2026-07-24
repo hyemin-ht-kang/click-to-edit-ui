@@ -2,6 +2,8 @@
 
 A [Claude Code](https://claude.com/claude-code) plugin that lets you **point at web UI components instead of describing them**.
 
+![Demo: Alt-clicking three components on a steampunk shop page, then requesting edits by number](assets/demo.gif)
+
 Editing a rendered UI with an agent is slow when you have to explain what you mean in words — *"the third dot in the second row of the sidebar…"*. With this skill, Claude injects a small probe into the page open in your browser; you **Alt-click** the components you want changed, each click gets a numbered badge (1, 2, 3…), and you request edits by number:
 
 > "Make **1** bigger, hide **2**, change **3** to green."
