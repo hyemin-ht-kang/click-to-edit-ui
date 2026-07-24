@@ -1,0 +1,14 @@
+{
+    "name": "click-to-edit-ui",
+    "description": "Point-and-edit for web UIs: Alt-click components in the browser and request edits by number",
+    "owner": {
+        "name": "hyemin-ht-kang"
+    },
+    "plugins": [
+        {
+            "name": "click-to-edit-ui",
+            "source": "./",
+            "description": "Point at web UI components by Alt-clicking them in the browser, then request edits by number instead of describing elements in words"
+        }
+    ]
+}

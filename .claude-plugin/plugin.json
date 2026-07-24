@@ -1,0 +1,8 @@
+{
+    "name": "click-to-edit-ui",
+    "description": "Point at web UI components by Alt-clicking them in the browser, then request edits by number (1, 2, 3) instead of describing elements in words",
+    "version": "0.1.0",
+    "author": {
+        "name": "Hyemin Kang"
+    }
+}
