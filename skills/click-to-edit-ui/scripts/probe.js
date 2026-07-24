@@ -11,7 +11,10 @@
  *     selection queue (pins a badge ①②③ on it + lists it in the HUD).
  *   - Alt + hover         → dashed outline preview of what would be selected.
  *   - Alt + Shift + click  → clear the whole queue (or the HUD "✕ clear").
- *   - Normal clicks are untouched, so the page stays fully usable.
+ *   - Normal clicks are untouched, so the page stays fully usable. A primary-
+ *     button press that starts with Alt held is suppressed as a whole sequence
+ *     (pointerdown → click, moves included) before page handlers see any of
+ *     it. Alt + middle/right clicks are left entirely to the page.
  *
  * The agent reads the ordered selection with:
  *     window.__probe.list()
@@ -27,6 +30,70 @@
  * is usually enough to locate the source.
  */
 (function () {
+  // --- Alt-gesture suppression ---------------------------------------------
+  // Registered on window at init-script time — before any page script has run,
+  // so these fire ahead of every page listener (window capture runs before
+  // document capture, and among window-capture peers registration order wins).
+  // stopImmediatePropagation() also silences peers registered later.
+  // The Alt state is latched at press time, primary button only: cancelling
+  // the late click event can't retroactively stop pointerdown/mousedown, and a
+  // modifier change mid-drag must not split a gesture into a half-suppressed
+  // sequence. A single (non-pointerId-keyed) latch is intentional — this tool
+  // targets mouse-driven desktop Chrome, not simultaneous multi-touch.
+  // pointerrawupdate is deliberately NOT suppressed: merely listening to it
+  // forces high-frequency dispatch on every page this probe arms.
+  var altGesture = null;   // null = idle; true/false = press began Alt+primary
+  var pressActive = false; // true while an Alt-latched press is physically held
+  var clickSink = null;    // set by install(); receives suppressed Alt-clicks
+
+  function suppress(e) { e.preventDefault(); e.stopImmediatePropagation(); }
+  function onDown(e) {
+    // pointerdown starts a gesture; mousedown only latches as a fallback when
+    // pointer events are unavailable (otherwise it reuses the pointerdown latch)
+    if (e.type === 'pointerdown' || altGesture === null || !window.PointerEvent) {
+      altGesture = !!e.altKey && e.button === 0;
+      pressActive = altGesture;
+    }
+    if (altGesture) suppress(e);
+  }
+  function onMoveSuppress(e) { if (pressActive) suppress(e); }
+  function onUp(e) {
+    if (altGesture) suppress(e);
+    if (e.type === 'pointerup' || !window.PointerEvent) pressActive = false;
+  }
+  function onWinClick(e) {
+    // e.detail > 0 marks a mouse-generated click; keyboard activation and
+    // synthetic dispatchEvent clicks carry detail 0 and are judged by altKey,
+    // so a latch left behind by a click-less drag can never swallow them
+    var alt = (altGesture !== null && e.detail > 0) ? altGesture : !!e.altKey;
+    altGesture = null;
+    if (!alt) return;
+    suppress(e);
+    if (clickSink) clickSink(e);
+  }
+  function onCancel(e) {
+    if (altGesture) suppress(e);
+    altGesture = null; pressActive = false;
+  }
+
+  var SUPPRESSORS = [
+    ['pointerdown', onDown], ['mousedown', onDown],
+    ['pointermove', onMoveSuppress], ['mousemove', onMoveSuppress],
+    ['pointerup', onUp], ['mouseup', onUp],
+    ['click', onWinClick], ['pointercancel', onCancel]
+  ];
+
+  function removeSuppressors() {
+    SUPPRESSORS.forEach(function (s) { window.removeEventListener(s[0], s[1], true); });
+    if (window.__probeRemoveSuppressors === removeSuppressors) delete window.__probeRemoveSuppressors;
+  }
+
+  // Hand off from any previously injected copy immediately — waiting for
+  // install() would briefly stack two latching state machines during load.
+  if (typeof window.__probeRemoveSuppressors === 'function') window.__probeRemoveSuppressors();
+  SUPPRESSORS.forEach(function (s) { window.addEventListener(s[0], s[1], true); });
+  window.__probeRemoveSuppressors = removeSuppressors;
+
   function install() {
     if (window.__probe) { window.__probe.teardown(); }
 
@@ -150,15 +217,12 @@
       lastHover = el; lastOutline = el.style.outline;
       el.style.outline = '2px dashed #c66e1d';
     }
-    function onClick(e) {
-      if (!e.altKey) return;
-      e.preventDefault(); e.stopPropagation();
+    document.addEventListener('mousemove', onMove, true);
+    clickSink = function (e) {
       if (e.shiftKey) { clearAll(); return; }
       clearHover();
       addSel(e.target);
-    }
-    document.addEventListener('mousemove', onMove, true);
-    document.addEventListener('click', onClick, true);
+    };
     renderHud();
 
     window.__probe = {
@@ -173,7 +237,8 @@
       teardown: function () {
         cancelAnimationFrame(raf);
         document.removeEventListener('mousemove', onMove, true);
-        document.removeEventListener('click', onClick, true);
+        removeSuppressors();
+        clickSink = null;
         clearAll();
         var h = document.getElementById('__probe-hud');
         if (h) h.remove();
