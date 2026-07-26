@@ -70,6 +70,14 @@ Ask your agent to *"set up the click probe"* — or just run `/click-to-edit-ui`
 
 That's the whole setup. The agent opens your dev server or local HTML file in the chrome-devtools browser and injects the probe for you. Alt-click the components you want changed, ask for edits by number, and the agent reloads and re-arms the probe after each batch so you can keep clicking.
 
+## Security
+
+Use the probe only on pages and origins you intend the agent to inspect. Element text, ids, classes, selectors, console output, and optional label/source hints all come from the rendered page and are treated as untrusted data—not as instructions to the agent. Source hints must be verified against the current workspace before any edit.
+
+The probe runs in the page's JavaScript environment, not a separate security sandbox. Use it with local development pages you control; page scripts can inspect, clear, or interfere with the probe.
+
+For sensitive applications, use a dedicated browser profile without personal sessions. The probe does not read cookies or input values, but the text of elements you select is returned to the agent when it reads the live selection.
+
 ## Plugin layout
 
 Both clients install the same directory — only the manifests differ.

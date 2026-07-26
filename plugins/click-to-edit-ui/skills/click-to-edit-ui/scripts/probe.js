@@ -30,10 +30,35 @@
  * Optional per-app enrichment: set `window.__PROBE_LABELS` to an array of
  * `[cssSelector, "Friendly name", "source hint"]` BEFORE this script runs
  * (e.g., prepend the assignment to the initScript). The probe attaches the
- * deepest-matching label to each selection. Without it, the generic descriptor
- * is usually enough to locate the source.
+ * deepest-matching label to each selection. The configuration is validated and
+ * snapshotted immediately, before page scripts can replace it. A label confirms
+ * only that a page-controlled element matches the configured selector, not that
+ * the element came from the hinted source; the agent must still verify it.
+ * Without labels, the generic descriptor is usually enough to locate the source.
  */
 (function () {
+  function capString(value, max) {
+    return typeof value === 'string' ? value.slice(0, max) : '';
+  }
+
+  // Treat labels as init-script configuration, not live page state. install()
+  // runs at DOMContentLoaded, so reading window.__PROBE_LABELS there would let a
+  // page script replace trusted source hints while the document is loading.
+  // Copy primitive strings now and ignore malformed or non-string values.
+  var LABELS = [];
+  var configuredLabels = window.__PROBE_LABELS;
+  if (Array.isArray(configuredLabels)) {
+    for (var labelIndex = 0; labelIndex < configuredLabels.length; labelIndex++) {
+      var entry = configuredLabels[labelIndex];
+      if (!Array.isArray(entry) || typeof entry[0] !== 'string' || !entry[0]) continue;
+      LABELS.push([
+        entry[0],
+        capString(entry[1], 80),
+        capString(entry[2], 200)
+      ]);
+    }
+  }
+
   // --- Alt-gesture suppression ---------------------------------------------
   // Registered on window at init-script time — before any page script has run,
   // so these fire ahead of every page listener (window capture runs before
@@ -99,9 +124,17 @@
   window.__probeRemoveSuppressors = removeSuppressors;
 
   function install() {
-    if (window.__probe) { window.__probe.teardown(); }
-
-    var LABELS = Array.isArray(window.__PROBE_LABELS) ? window.__PROBE_LABELS : [];
+    if (window.__PROBE_LABELS !== configuredLabels) {
+      console.warn('[PROBE] window.__PROBE_LABELS was replaced after init; using the snapshot taken at init-script time.');
+    }
+    if (window.__probe) {
+      if (typeof window.__probe.teardown === 'function') {
+        try { window.__probe.teardown(); }
+        catch (e) { console.warn('[PROBE] previous probe teardown failed; continuing with a fresh install.', e); }
+      } else {
+        console.warn('[PROBE] existing window.__probe has no teardown function; replacing it.');
+      }
+    }
 
     function depth(el) { var d = 0, n = el; while ((n = n.parentElement)) d++; return d; }
     function landmark(el) {
@@ -112,12 +145,18 @@
     function shortSel(el) {
       var parts = [], n = el;
       for (var i = 0; n && n.nodeType === 1 && i < 5; i++, n = n.parentElement) {
-        var s = n.tagName.toLowerCase();
-        if (n.id) { s += '#' + n.id; parts.unshift(s); break; }
-        if (n.classList.length) s += '.' + Array.prototype.slice.call(n.classList, 0, 2).join('.');
+        var s = capString(n.tagName.toLowerCase(), 40);
+        if (n.id) { s += '#' + capString(n.id, 80); parts.unshift(s); break; }
+        if (n.classList.length) {
+          var pathClasses = [];
+          for (var ci = 0; ci < n.classList.length && ci < 2; ci++) {
+            pathClasses.push(capString(n.classList.item(ci), 40));
+          }
+          s += '.' + pathClasses.join('.');
+        }
         parts.unshift(s);
       }
-      return parts.join(' > ');
+      return capString(parts.join(' > '), 200);
     }
     function matchLabel(el) {
       var best = null, bd = -1;
@@ -129,13 +168,19 @@
     }
     function describe(el) {
       var lab = matchLabel(el);
+      var classes = [];
+      if (typeof el.className === 'string' && el.className) {
+        for (var i = 0; i < el.classList.length && i < 8; i++) {
+          classes.push(capString(el.classList.item(i), 40));
+        }
+      }
       return {
-        tag: el.tagName.toLowerCase(),
-        id: el.id || '',
-        classes: (typeof el.className === 'string' && el.className) ? Array.prototype.slice.call(el.classList) : [],
-        landmark: landmark(el),
+        tag: capString(el.tagName.toLowerCase(), 40),
+        id: capString(el.id, 80),
+        classes: classes,
+        landmark: capString(landmark(el), 80),
         selector: shortSel(el),
-        text: (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        text: capString((el.textContent || '').replace(/\s+/g, ' ').trim(), 80),
         label: lab ? lab.name : '',
         source: lab ? lab.source : ''
       };
@@ -341,7 +386,6 @@
       el.style.outlineOffset = '-1px';
       var info = describe(el);
       sels.push({ n: n, el: el, badge: badge, info: info });
-      console.log('[PROBE #' + n + '] ' + JSON.stringify(info));
       renderHud();
     }
 
@@ -396,9 +440,17 @@
     window.__probe = {
       list: function () {
         return sels.map(function (s) {
-          var o = { n: s.n };
-          for (var k in s.info) o[k] = s.info[k];
-          return o;
+          return {
+            n: s.n,
+            tag: s.info.tag,
+            id: s.info.id,
+            classes: s.info.classes.slice(),
+            landmark: s.info.landmark,
+            selector: s.info.selector,
+            text: s.info.text,
+            label: s.info.label,
+            source: s.info.source
+          };
         });
       },
       clear: clearAll,
