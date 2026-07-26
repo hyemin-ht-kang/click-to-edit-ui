@@ -35,9 +35,8 @@
      reproduces the relevant ordering: trusted config, probe start, then page
      scripts, all before DOMContentLoaded.
 
-     Manual run:
-     chrome --headless=new --virtual-time-budget=3000 --dump-dom \
-       file:///absolute/path/to/examples/probe-security-test.html
+     For a platform-appropriate headless regression procedure, see the
+     repository-root AGENTS.md. The rendered #result must begin with PASS:.
 -->
 <script src="../plugins/click-to-edit-ui/skills/click-to-edit-ui/scripts/probe.js"></script>
 <script>
