@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>click-to-edit-ui — probe test page</title>
+<style>
+  :root {
+    --ink: #1b1a17; --paper: #faf7ef; --gold: #c69214; --rust: #d94a2a;
+    --line: #ded7c7; --muted: #6b6455;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 14px/1.6 ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 22px 24px 18px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 24px;
+  }
+  h1 { margin: 0 0 4px; font-size: 19px; letter-spacing: -.01em; }
+  h1 code { font-size: 15px; color: var(--muted); font-weight: 400; }
+  .sub { color: var(--muted); font-size: 13px; max-width: 60ch; }
+  main { display: grid; grid-template-columns: minmax(320px, 1.1fr) minmax(280px, .9fr); gap: 0; }
+  section { padding: 20px 24px; border-bottom: 1px solid var(--line); }
+  main > section:nth-child(odd) { border-right: 1px solid var(--line); }
+  h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+  /* The "hot zone" deliberately sits under the HUD's default position, so the
+     click-through guarantee (and the reason to move the HUD) is testable. */
+  #hotzone {
+    position: fixed; top: 0; right: 0; width: 440px; padding: 14px 16px 16px;
+    background: repeating-linear-gradient(45deg, #f3ecd9, #f3ecd9 8px, #efe6cd 8px, #efe6cd 16px);
+    border-left: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    z-index: 1; text-align: right;
+  }
+  #hotzone p { margin: 0 0 8px; font-size: 12px; color: var(--muted); }
+  #hotzone .row { display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 5px 11px; cursor: pointer;
+    background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+  }
+  button:hover { border-color: var(--gold); }
+  button:active { transform: translateY(1px); }
+  input[type=text] { font: inherit; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; width: 160px; }
+  label { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; cursor: pointer; font-size: 13px; }
+  label input { margin-top: 4px; flex: none; }
+  label span b { font-weight: 600; }
+  .hint { color: var(--muted); font-size: 12px; }
+  kbd {
+    font: 600 11px ui-monospace, Menlo, monospace; background: #fff;
+    border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 5px;
+  }
+
+  .cards { display: flex; gap: 10px; flex-wrap: wrap; }
+  .card { flex: 1 1 130px; padding: 11px 13px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+  .card .k { font: 600 11px ui-monospace, monospace; color: var(--gold); text-transform: uppercase; letter-spacing: .05em; }
+  .card .v { font-size: 21px; font-weight: 600; margin-top: 2px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line); }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+  pre {
+    margin: 0; padding: 10px 12px; background: var(--ink); color: var(--paper);
+    border-radius: 6px; font: 11px/1.6 ui-monospace, Menlo, monospace;
+    white-space: pre-wrap; word-break: break-all; min-height: 44px;
+  }
+  .tall { height: 900px; background: linear-gradient(var(--paper), #efe9db); }
+</style>
+</head>
+<body>
+
+<!-- Optional per-app labels. Uncomment to see `label`/`source` populate in the
+     HUD and in window.__probe.list(). Must run BEFORE probe.js. -->
+<!--
+<script>
+  window.__PROBE_LABELS = [
+    ['.card', 'Metric card', 'renderCards() in app.js'],
+    ['#orders td', 'Order cell', 'renderOrders()'],
+  ];
+</script>
+-->
+<script src="../skills/click-to-edit-ui/scripts/probe.js"></script>
+
+<div id="hotzone">
+  <p>↑ The HUD lands on top of this corner.<br>Everything here must stay clickable.</p>
+  <div class="row">
+    <input type="text" id="corner-input" placeholder="type here">
+    <button id="corner-btn">clicked <span id="corner-count">0</span>×</button>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>Probe test page <code>click-to-edit-ui</code></h1>
+    <p class="sub">
+      Loads <code>skills/click-to-edit-ui/scripts/probe.js</code> directly, so you're testing
+      the real thing. Open this file in Chrome — the HUD arms itself on load.
+    </p>
+  </div>
+</header>
+
+<main>
+  <section id="checklist-panel">
+    <h2>Try these</h2>
+
+    <label><input type="checkbox"><span><b>Click-through</b> — click the button and text field in the striped corner, <em>under</em> the HUD. Both should work.</span></label>
+    <label><input type="checkbox"><span><b>Drag</b> — grab the <kbd>⠿</kbd> grip and drag the HUD to the bottom-left.</span></label>
+    <label><input type="checkbox"><span><b>Clamp</b> — drag hard past a screen edge. The HUD should stop at the edge, not leave.</span></label>
+    <label><input type="checkbox"><span><b>Persist</b> — hit <kbd>⌘R</kbd>. The HUD should come back where you left it.</span></label>
+    <label><input type="checkbox"><span><b>Collapse</b> — press <kbd>−</kbd>. The list hides but the count stays. Reload — still collapsed.</span></label>
+    <label><input type="checkbox"><span><b>Reset</b> — double-click the <kbd>⠿</kbd> grip. It snaps back to the top-right.</span></label>
+    <label><input type="checkbox"><span><b>Resize</b> — drag the HUD low, then shrink the window. It should be pulled back into view.</span></label>
+    <label><input type="checkbox"><span><b>Select</b> — <kbd>Alt</kbd>+click a few cards and table cells. Badges pin, list numbers them.</span></label>
+    <label><input type="checkbox"><span><b>Scroll</b> — scroll down with selections active. Badges should track their elements.</span></label>
+    <label><input type="checkbox"><span><b>Clear</b> — <kbd>Alt</kbd>+<kbd>Shift</kbd>+click, or the HUD's <kbd>✕ clear</kbd>.</span></label>
+
+    <p class="hint" style="margin-top:14px">
+      Known limit: <kbd>Alt</kbd>+drag on the grip does <em>not</em> move the HUD — the probe's
+      Alt-suppressors intercept it first. Drag without Alt.
+    </p>
+  </section>
+
+  <section id="state-panel">
+    <h2>Live state</h2>
+    <p class="hint" style="margin-top:-6px">Saved HUD state — updates as you drag and collapse.</p>
+    <pre id="storage">—</pre>
+    <p class="hint" style="margin-top:12px">Current selections — <code>window.__probe.list()</code>.</p>
+    <pre id="selections">—</pre>
+    <div class="row" style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+      <button onclick="location.reload()">Reload page</button>
+      <button id="forget">Forget saved position</button>
+    </div>
+    <p class="hint" style="margin-top:8px">
+      Storage works on <code>file://</code> in Chrome. If this stays empty anyway, your
+      browser is blocking it — the probe degrades to the default corner rather than breaking.
+      Serve over HTTP to compare: <code>python3 -m http.server</code> from the repo root.
+    </p>
+  </section>
+
+  <section id="metrics">
+    <h2>Things to Alt-click</h2>
+    <div class="cards">
+      <div class="card" id="card-runs"><div class="k">Runs</div><div class="v">128</div></div>
+      <div class="card" id="card-pass"><div class="k">Passing</div><div class="v">119</div></div>
+      <div class="card" id="card-flaky"><div class="k">Flaky</div><div class="v">6</div></div>
+    </div>
+  </section>
+
+  <section id="orders">
+    <h2>Nested elements</h2>
+    <table class="matrix">
+      <thead><tr><th>Order</th><th class="run-col">Status</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td>#1042</td><td class="run-col ok">shipped</td><td>$24.00</td></tr>
+        <tr><td>#1043</td><td class="run-col pending">pending</td><td>$118.50</td></tr>
+        <tr><td>#1044</td><td class="run-col ok">shipped</td><td>$9.99</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<section class="tall" id="scroll-space">
+  <h2>Scroll space</h2>
+  <p class="hint">Alt-click something above, then scroll here — the badges should follow their elements and hide once those scroll out of view.</p>
+</section>
+
+<script>
+  var count = 0;
+  document.getElementById('corner-btn').addEventListener('click', function () {
+    document.getElementById('corner-count').textContent = ++count;
+  });
+
+  document.getElementById('forget').addEventListener('click', function () {
+    try { sessionStorage.removeItem('__probe-hud'); } catch (e) {}
+    location.reload();
+  });
+
+  var storageEl = document.getElementById('storage');
+  var selectionsEl = document.getElementById('selections');
+  setInterval(function () {
+    var raw;
+    try { raw = sessionStorage.getItem('__probe-hud'); }
+    catch (e) { raw = null; storageEl.textContent = 'sessionStorage unavailable (' + e.name + ')'; return; }
+    storageEl.textContent = raw ? JSON.stringify(JSON.parse(raw), null, 2) : '(nothing saved yet — drag the HUD)';
+
+    var list = window.__probe ? window.__probe.list() : null;
+    if (!list) selectionsEl.textContent = 'probe not installed';
+    else if (!list.length) selectionsEl.textContent = '(none — Alt+click something)';
+    else selectionsEl.textContent = list.map(function (s) {
+      return s.n + '. ' + s.selector + (s.text ? '  “' + s.text.slice(0, 30) + '”' : '');
+    }).join('\n');
+  }, 250);
+</script>
+
+</body>
+</html>

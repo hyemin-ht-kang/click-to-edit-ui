@@ -15,9 +15,10 @@ Claude reads the ordered selection back from the page (`window.__probe.list()`),
 - **Alt/Option + click** — queue a component (badge pinned on it + listed in a top-right HUD)
 - **Alt + hover** — dashed outline preview of what would be selected
 - **Alt + Shift + click** — clear the queue
+- **Drag the ⠿ grip** — move the HUD anywhere it's out of your way (double-click the grip to reset it, **−** to collapse it to its title bar)
 - Normal clicks are untouched, so the page stays fully usable
 
-The probe is registered as a navigation init-script, so it survives page reloads — including your own Cmd+R.
+The probe is registered as a navigation init-script, so it survives page reloads — including your own Cmd+R. The HUD's position and collapsed state persist across those reloads too, for as long as the tab stays open.
 
 ## Requirements
 

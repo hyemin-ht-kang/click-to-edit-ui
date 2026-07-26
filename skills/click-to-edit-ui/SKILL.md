@@ -58,6 +58,7 @@ Tell them, briefly:
 - **Alt/Option + click** each component to queue it (badge ①②③ appears on it + a line in the top-right HUD).
 - Reference them **by number** in any order — *"make ① 2px bigger, hide ②, color ③ by its score."*
 - **Alt+Shift+click** (or the HUD's **✕ clear**) resets the queue.
+- If the HUD covers something they need: **drag the ⠿ grip** to move it anywhere, **double-click the grip** to snap it back to the top-right, or **−** to collapse it to just its title bar. Position and collapsed state persist across reloads for the rest of the tab's session.
 - Normal clicks still work; re-clicking the same element is ignored.
 
 ## Step 4 — Read what they clicked (don't guess)

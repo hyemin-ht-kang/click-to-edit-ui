@@ -11,6 +11,10 @@
  *     selection queue (pins a badge ①②③ on it + lists it in the HUD).
  *   - Alt + hover         → dashed outline preview of what would be selected.
  *   - Alt + Shift + click  → clear the whole queue (or the HUD "✕ clear").
+ *   - Drag the HUD's ⠿ grip → move the HUD anywhere (double-click it to snap
+ *     back to the top-right); "−" collapses the HUD to just its title bar.
+ *     Both are remembered in sessionStorage, so they survive the reloads this
+ *     tool's edit loop performs.
  *   - Normal clicks are untouched, so the page stays fully usable. A primary-
  *     button press that starts with Alt held is suppressed as a whole sequence
  *     (pointerdown → click, moves included) before page handlers see any of
@@ -144,21 +148,186 @@
 
     var sels = [];
 
+    // --- HUD ----------------------------------------------------------------
+    // pointer-events is inherited, so `none` on the container makes the whole
+    // HUD click-through and each control opts back in with `auto` — the page
+    // underneath stays usable except for the few pixels of actual chrome.
+    // The bar is built ONCE and never re-rendered: renderHud() rewrites only
+    // `body`, so the grip/clear/collapse listeners are never orphaned.
     var hud = document.createElement('div');
     hud.id = '__probe-hud';
-    hud.style.cssText = 'position:fixed;top:8px;right:8px;z-index:2147483647;max-width:420px;background:#1b1a17;color:#faf7ef;font:11px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:8px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.4);pointer-events:none;white-space:pre-wrap;border:1px solid #e8b53a;';
+    // Translucent so you can see what the HUD is covering. The two knobs trade
+    // against each other: alpha controls how much shows through, the backdrop
+    // blur keeps the HUD's 11px text legible over busy pages. Keep the blur
+    // low — past ~4px it smears the underlying content into an unreadable wash,
+    // which defeats the point of being see-through at all.
+    // text-shadow matters more than it looks: at this alpha the backdrop is
+    // partly the page's own (often light) background, so the cream text loses
+    // contrast. The shadow gives every glyph its own edge regardless of what
+    // is behind the panel.
+    hud.style.cssText = 'position:fixed;top:8px;right:8px;z-index:2147483647;max-width:420px;background:rgba(27,26,23,.55);-webkit-backdrop-filter:blur(3px) saturate(1.2);backdrop-filter:blur(3px) saturate(1.2);color:#faf7ef;text-shadow:0 1px 2px rgba(0,0,0,.55);font:11px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:8px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.28);pointer-events:none;white-space:pre-wrap;border:1px solid rgba(232,181,58,.8);';
+
+    var BTN_CSS = 'pointer-events:auto;cursor:pointer;border:1px solid #e8b53a;border-radius:4px;padding:0 5px;';
+
+    var bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;gap:6px;user-select:none;';
+
+    var grip = document.createElement('span');
+    grip.id = '__probe-grip';
+    grip.textContent = '⠿';
+    grip.title = 'Drag to move · double-click to reset';
+    // touch-action:none keeps a drag from being stolen by touch scrolling
+    grip.style.cssText = 'pointer-events:auto;cursor:grab;color:#e8b53a;touch-action:none;';
+
+    var title = document.createElement('span');
+    title.style.cssText = 'flex:1;';
+
+    var clearBtn = document.createElement('span');
+    clearBtn.id = '__probe-clear';
+    clearBtn.textContent = '✕ clear';
+    clearBtn.style.cssText = BTN_CSS;
+
+    var collapseBtn = document.createElement('span');
+    collapseBtn.id = '__probe-collapse';
+    collapseBtn.style.cssText = BTN_CSS;
+
+    var body = document.createElement('div');
+    body.id = '__probe-body';
+    body.style.cssText = 'margin-top:3px;';
+
+    bar.appendChild(grip); bar.appendChild(title);
+    bar.appendChild(clearBtn); bar.appendChild(collapseBtn);
+    hud.appendChild(bar); hud.appendChild(body);
     document.body.appendChild(hud);
 
     function renderHud() {
-      if (!sels.length) {
-        hud.innerHTML = '🔍 probe armed — <b>Alt/Option+click</b> components to queue them.<br>(Alt+Shift+click = clear all)';
-        return;
+      title.innerHTML = sels.length
+        ? '🔍 <b>' + sels.length + ' selected</b>'
+        : '🔍 probe armed — <b>Alt/Option+click</b> to queue';
+      clearBtn.style.display = sels.length ? '' : 'none';
+      collapseBtn.textContent = collapsed ? '+' : '−';
+      collapseBtn.title = collapsed ? 'Expand' : 'Collapse';
+      // Built as DOM nodes, not innerHTML: shortName() interpolates page-derived
+      // ids/classes/labels, so markup there would execute in the page.
+      body.textContent = '';
+      if (sels.length) {
+        sels.forEach(function (s, i) {
+          if (i) body.appendChild(document.createElement('br'));
+          var num = document.createElement('span');
+          num.style.color = '#e8b53a';
+          num.textContent = s.n + '.';
+          body.appendChild(num);
+          body.appendChild(document.createTextNode(' ' + shortName(s.info)));
+        });
+      } else {
+        body.textContent = 'Alt+Shift+click = clear all · ⠿ drag to move';
       }
-      var rows = sels.map(function (s) { return '<span style="color:#e8b53a;">' + s.n + '.</span> ' + shortName(s.info); }).join('<br>');
-      hud.innerHTML = '🔍 <b>' + sels.length + ' selected</b> <span id="__probe-clear" style="pointer-events:auto;cursor:pointer;border:1px solid #e8b53a;border-radius:4px;padding:0 5px;margin-left:4px;">✕ clear</span><br>' + rows;
-      var c = document.getElementById('__probe-clear');
-      if (c) c.onclick = clearAll;
+      body.style.display = collapsed ? 'none' : '';
     }
+
+    // --- HUD placement ------------------------------------------------------
+    // Position + collapsed state live in sessionStorage so they survive the
+    // reloads this tool's edit loop performs, without leaving a lasting key in
+    // the page's origin storage. Storage can throw (file:// origins, strict
+    // partitioning), so every access degrades to "start at the default corner"
+    // rather than breaking the probe.
+    var STORE_KEY = '__probe-hud';
+    var placed = false;  // true once the HUD uses left/top instead of the default top/right anchor
+    var collapsed = false;
+
+    function readState() {
+      try { return JSON.parse(sessionStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+    }
+    function saveState() {
+      var r = hud.getBoundingClientRect();
+      var s = { collapsed: collapsed };
+      if (placed) { s.left = r.left; s.top = r.top; }
+      try { sessionStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) {}
+    }
+    function moveTo(l, t) {
+      hud.style.left = l + 'px';
+      hud.style.top = t + 'px';
+      hud.style.right = 'auto';
+    }
+    function clampIntoView() {
+      var r = hud.getBoundingClientRect();
+      moveTo(
+        Math.min(Math.max(0, r.left), Math.max(0, window.innerWidth - r.width)),
+        Math.min(Math.max(0, r.top), Math.max(0, window.innerHeight - r.height))
+      );
+    }
+    function resetPos() {
+      placed = false;
+      hud.style.left = 'auto';
+      hud.style.right = '8px';
+      hud.style.top = '8px';
+      saveState();
+    }
+
+    var saved = readState();
+    collapsed = !!saved.collapsed;
+    renderHud();  // size the box before measuring it
+    if (typeof saved.left === 'number' && typeof saved.top === 'number') {
+      placed = true;
+      moveTo(saved.left, saved.top);
+      clampIntoView();  // the window may have shrunk since the position was saved
+    }
+
+    // --- HUD interactions ---------------------------------------------------
+    // Note: the window-capture Alt-suppressors above run before these
+    // target-phase handlers, so Alt+drag on the grip is swallowed by design.
+    // Plain drag is unaffected.
+    var dragOff = null;
+
+    grip.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); e.stopPropagation();
+      var r = hud.getBoundingClientRect();
+      dragOff = { x: e.clientX - r.left, y: e.clientY - r.top };
+      placed = true;
+      moveTo(r.left, r.top);  // switch off the top/right anchor before dragging
+      grip.style.cursor = 'grabbing';
+      // pointer capture keeps the drag alive when the cursor outruns the HUD
+      try { grip.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    grip.addEventListener('pointermove', function (e) {
+      if (!dragOff) return;
+      e.preventDefault(); e.stopPropagation();
+      var r = hud.getBoundingClientRect();
+      moveTo(
+        Math.min(Math.max(0, e.clientX - dragOff.x), Math.max(0, window.innerWidth - r.width)),
+        Math.min(Math.max(0, e.clientY - dragOff.y), Math.max(0, window.innerHeight - r.height))
+      );
+    });
+    function endDrag(e) {
+      if (!dragOff) return;
+      dragOff = null;
+      grip.style.cursor = 'grab';
+      try { grip.releasePointerCapture(e.pointerId); } catch (err) {}
+      saveState();
+    }
+    grip.addEventListener('pointerup', endDrag);
+    grip.addEventListener('pointercancel', endDrag);
+
+    // Fires after both pointerup/endDrag pairs, so the reset wins over the
+    // zero-distance "drag" each click of the double-click starts.
+    grip.addEventListener('dblclick', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      resetPos();
+    });
+
+    clearBtn.addEventListener('click', function (e) { e.stopPropagation(); clearAll(); });
+
+    collapseBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      collapsed = !collapsed;
+      renderHud();
+      if (placed) clampIntoView();  // expanding near the bottom edge can overflow
+      saveState();
+    });
+
+    function onResize() { if (placed) { clampIntoView(); saveState(); } }
+    window.addEventListener('resize', onResize);
 
     function addSel(el) {
       if (el === hud || (el.closest && el.closest('#__probe-hud'))) return;
@@ -223,7 +392,6 @@
       clearHover();
       addSel(e.target);
     };
-    renderHud();
 
     window.__probe = {
       list: function () {
@@ -237,6 +405,7 @@
       teardown: function () {
         cancelAnimationFrame(raf);
         document.removeEventListener('mousemove', onMove, true);
+        window.removeEventListener('resize', onResize);
         removeSuppressors();
         clickSink = null;
         clearAll();
