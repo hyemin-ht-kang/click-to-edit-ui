@@ -1,0 +1,20 @@
+{
+  "name": "click-to-edit-ui",
+  "interface": {
+    "displayName": "Click to Edit UI"
+  },
+  "plugins": [
+    {
+      "name": "click-to-edit-ui",
+      "source": {
+        "source": "local",
+        "path": "./plugins/click-to-edit-ui"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Coding"
+    }
+  ]
+}

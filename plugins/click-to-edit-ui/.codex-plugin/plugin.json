@@ -1,0 +1,36 @@
+{
+  "name": "click-to-edit-ui",
+  "version": "0.3.0",
+  "description": "Point at web UI components by Alt-clicking them in the browser, then request edits by number instead of describing elements in words",
+  "author": {
+    "name": "Hyemin Kang",
+    "url": "https://github.com/hyemin-ht-kang"
+  },
+  "homepage": "https://github.com/hyemin-ht-kang/click-to-edit-ui",
+  "repository": "https://github.com/hyemin-ht-kang/click-to-edit-ui",
+  "license": "MIT",
+  "keywords": [
+    "browser",
+    "frontend",
+    "ui",
+    "visual-editing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Click to Edit UI",
+    "shortDescription": "Point at UI elements and edit them by number.",
+    "longDescription": "Alt-click rendered UI elements in Chrome, then ask Codex to edit the numbered selections and verify the result in the live page.",
+    "developerName": "Hyemin Kang",
+    "category": "Coding",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Set up the click probe for this UI.",
+      "Read my selected elements and edit them.",
+      "Re-arm the probe after reloading the page."
+    ],
+    "brandColor": "#D94A2A"
+  }
+}

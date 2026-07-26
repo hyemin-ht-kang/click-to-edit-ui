@@ -7,7 +7,7 @@
     "plugins": [
         {
             "name": "click-to-edit-ui",
-            "source": "./",
+            "source": "./plugins/click-to-edit-ui",
             "description": "Point at web UI components by Alt-clicking them in the browser, then request edits by number instead of describing elements in words"
         }
     ]
