@@ -1,12 +1,12 @@
 # click-to-edit-ui
 
-A plugin for [Codex](https://developers.openai.com/codex/) and [Claude Code](https://claude.com/claude-code) that lets you **point at web UI components instead of describing them**.
+A plugin for [Claude Code](https://claude.com/claude-code) and [Codex](https://developers.openai.com/codex/) that lets you **point at web UI components instead of describing them**.
 
 ![Demo: Alt-clicking three components on a steampunk shop page, then requesting edits by number](assets/demo.gif)
 
 Editing a rendered UI with an agent is slow when you have to explain what you mean in words — *"the third dot in the second row of the sidebar…"*. With this skill, the agent injects a small probe into the page open in your browser; you **Alt-click** the components you want changed, each click gets a numbered badge (1, 2, 3…), and you request edits by number:
 
-> "Make **1** bigger, hide **2**, change **3** to green."
+> "Make **1** bigger, change **2** to copper, and add gear emojis to **3**."
 
 The agent reads the ordered selection back from the page (`window.__probe.list()`), maps each element to its source, edits the code, reloads the page, and re-arms the probe — so the click → edit → verify loop never breaks.
 
@@ -22,17 +22,36 @@ The probe is registered as a navigation init-script, so it survives page reloads
 
 ## Requirements
 
-A [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) connection (the skill uses its `navigate_page` and `evaluate_script` tools), plus Node.js, npm, and Chrome.
+A [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) connection (the skill uses its `navigate_page` and `evaluate_script` tools), plus Node.js (LTS), npm, and current stable Chrome.
 
-For Codex, add the MCP server with:
+Add the MCP server for your client:
+
+**Claude Code**
+
+```sh
+claude mcp add chrome-devtools --scope user -- npx chrome-devtools-mcp@latest
+```
+
+`--scope user` makes the server available in every project. Omit it to add it only to the current one — local is the default scope. Confirm it connected with `claude mcp list`, or the `/mcp` panel inside a session.
+
+**Codex**
 
 ```sh
 codex mcp add chrome-devtools -- npx chrome-devtools-mcp@latest
 ```
 
-Restart Codex after adding the MCP server.
+Restart the client after adding the MCP server.
 
 ## Install
+
+### Claude Code
+
+Add this repository as a marketplace, then install the plugin — both run inside a Claude Code session:
+
+```text
+/plugin marketplace add hyemin-ht-kang/click-to-edit-ui
+/plugin install click-to-edit-ui@click-to-edit-ui
+```
 
 ### Codex
 
@@ -45,29 +64,30 @@ codex plugin add click-to-edit-ui@click-to-edit-ui
 
 Start a new Codex thread after installation so the skill and MCP tools are loaded.
 
-### Claude Code
-
-```text
-/plugin marketplace add hyemin-ht-kang/click-to-edit-ui
-/plugin install click-to-edit-ui@click-to-edit-ui
-```
-
 ## Usage
 
-1. Open your dev server or a local HTML file in the chrome-devtools browser.
-2. Ask the agent: *"set up the click probe"* (or just start Alt-clicking after any UI editing session begins).
-3. Alt-click the components you want changed, then request edits by number.
+Ask your agent to *"set up the click probe"* — or just run `/click-to-edit-ui` (in Claude Code) or `$click-to-edit-ui` (in Codex).
+
+That's the whole setup. The agent opens your dev server or local HTML file in the chrome-devtools browser and injects the probe for you. Alt-click the components you want changed, ask for edits by number, and the agent reloads and re-arms the probe after each batch so you can keep clicking.
 
 ## Plugin layout
 
-The Codex and Claude Code packages share the same implementation:
+Both clients install the same directory — only the manifests differ.
 
-- `plugins/click-to-edit-ui/.codex-plugin/plugin.json` — Codex plugin metadata
-- `.agents/plugins/marketplace.json` — Codex Git marketplace entry
-- `.claude-plugin/marketplace.json` — Claude Code marketplace metadata
-- `plugins/click-to-edit-ui/.claude-plugin/plugin.json` — Claude Code plugin metadata
-- `plugins/click-to-edit-ui/skills/click-to-edit-ui/SKILL.md` — the agent workflow
-- `plugins/click-to-edit-ui/skills/click-to-edit-ui/scripts/probe.js` — the browser probe
+```
+.claude-plugin/marketplace.json     Claude Code marketplace entry ─┐
+.agents/plugins/marketplace.json    Codex marketplace entry ───────┤
+                                                                   │
+plugins/click-to-edit-ui/           ← both point here ─────────────┘
+├── .claude-plugin/plugin.json      Claude Code plugin manifest
+├── .codex-plugin/plugin.json       Codex plugin manifest
+├── LICENSE
+└── skills/click-to-edit-ui/
+    ├── SKILL.md                    the agent workflow
+    └── scripts/probe.js            the browser probe
+```
+
+`SKILL.md` and `probe.js` are the entire implementation and are shared by both clients; everything else is packaging. `README.md`, `assets/`, and `examples/` stay at the repo root and are not part of the installed plugin.
 
 The plugin does not bundle Chrome DevTools MCP. Keeping it as an external requirement avoids starting a second browser server when one is already configured.
 

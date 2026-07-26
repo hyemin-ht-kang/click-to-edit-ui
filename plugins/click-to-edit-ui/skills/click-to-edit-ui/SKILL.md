@@ -13,7 +13,14 @@ Editing a rendered UI is much faster when the user can **point** at a component 
 - The user says things like "let me click the parts I want edited," "set up the probe," or starts referring to components by number (① ② ③).
 - After a reload, to confirm the probe re-armed (it should, automatically).
 
-This needs the **chrome-devtools MCP** (`navigate_page`, `evaluate_script`, optionally `list_console_messages`) in Codex or Claude Code. If it isn't available, say so — there's no fallback that gives the click-to-point experience.
+This needs the **chrome-devtools MCP** (`navigate_page`, `evaluate_script`, optionally `list_console_messages`) in Claude Code or Codex. If it isn't available, say so — there's no fallback that gives the click-to-point experience — and give the user the command to add it, then have them restart the client:
+
+```sh
+# Claude Code
+claude mcp add chrome-devtools --scope user -- npx chrome-devtools-mcp@latest
+# Codex
+codex mcp add chrome-devtools -- npx chrome-devtools-mcp@latest
+```
 
 ## The loop, at a glance
 
