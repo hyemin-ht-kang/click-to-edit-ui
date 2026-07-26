@@ -22,6 +22,17 @@ claude mcp add chrome-devtools --scope user -- npx chrome-devtools-mcp@latest
 codex mcp add chrome-devtools -- npx chrome-devtools-mcp@latest
 ```
 
+The commands above follow the upstream `@latest` setup. If the user prefers a short supply-chain observation window and their npm supports `min-release-age`, offer the equivalent commands with `--min-release-age=2` placed before the package spec:
+
+```sh
+# Claude Code
+claude mcp add chrome-devtools --scope user -- npx --min-release-age=2 chrome-devtools-mcp@latest
+# Codex
+codex mcp add chrome-devtools -- npx --min-release-age=2 chrome-devtools-mcp@latest
+```
+
+This continues to update automatically while excluding versions published during the preceding two days. It is an optional risk-reduction measure, not a trust guarantee. If npm rejects the option, use the standard upstream command rather than silently switching package managers.
+
 ## The loop, at a glance
 
 ```

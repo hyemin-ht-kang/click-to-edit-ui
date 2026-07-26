@@ -40,6 +40,18 @@ claude mcp add chrome-devtools --scope user -- npx chrome-devtools-mcp@latest
 codex mcp add chrome-devtools -- npx chrome-devtools-mcp@latest
 ```
 
+The commands above follow the upstream recommendation and always select the current `latest` release. If your npm supports [`min-release-age`](https://docs.npmjs.com/cli/using-npm/config/#min-release-age), you can add a two-day observation window without pinning and maintaining a version yourself:
+
+```sh
+# Claude Code
+claude mcp add chrome-devtools --scope user -- npx --min-release-age=2 chrome-devtools-mcp@latest
+
+# Codex
+codex mcp add chrome-devtools -- npx --min-release-age=2 chrome-devtools-mcp@latest
+```
+
+This still updates automatically, but npm will not select a version during its first two days after publication. It reduces exposure to newly published malicious or broken releases; it does not make the package inherently trusted. Older npm releases may reject the option, in which case use the standard upstream command above.
+
 Restart the client after adding the MCP server.
 
 ## Install
