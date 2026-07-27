@@ -111,6 +111,19 @@ plugins/click-to-edit-ui/           ← both point here ────────
 
 The plugin does not bundle Chrome DevTools MCP. Keeping it as an external requirement avoids starting a second browser server when one is already configured.
 
+## Regenerating the demo GIF
+
+The GIF is rendered from `demo/page.html` plus the **current** `probe.js` by a scripted Playwright storyboard, so it always demonstrates the shipped behavior:
+
+```bash
+cd demo
+npm install
+npx playwright install chromium   # first time only
+npm run record                    # rewrites assets/demo.gif
+```
+
+To change what the demo shows (new features, different edits), edit `demo/page.html` and/or the `FRAMES` storyboard at the top of `demo/record.mjs`, then re-run.
+
 ## License
 
 [MIT](LICENSE)

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cog &amp; Kettle</title>
+<style>
+  :root {
+    --leather: #241C15;
+    --leather-lt: #3A2D22;
+    --brass: #C9A227;
+    --brass-dk: #8F6D1A;
+    --copper: #B87333;
+    --parchment: #EAD9B0;
+    --parchment-dk: #D9C494;
+    --ink: #3A2D22;
+    --verdigris: #4E8577;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Georgia, "Iowan Old Style", serif;
+    color: var(--parchment);
+    background: var(--leather);
+    background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 7px);
+    min-height: 100vh;
+  }
+  .masthead {
+    height: 40px;
+    background: linear-gradient(180deg, #d9b544 0%, var(--brass) 45%, var(--brass-dk) 100%);
+    border-bottom: 3px solid #5c4410;
+    background-image:
+      radial-gradient(circle at 20px 50%, #6b5310 3px, rgba(255,255,255,0.35) 3.5px, transparent 5px),
+      linear-gradient(180deg, #d9b544 0%, #C9A227 45%, #8F6D1A 100%);
+    background-size: 40px 100%, 100% 100%;
+    background-repeat: repeat-x, no-repeat;
+  }
+  header { padding: 26px 40px 4px; }
+  h1 {
+    font-family: Copperplate, "Copperplate Gothic Light", serif;
+    font-size: 30px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 3px;
+    display: inline-block;
+    color: var(--parchment);
+    text-shadow: 0 1px 0 #000, 0 0 22px rgba(201, 162, 39, 0.35);
+  }
+  .tagline {
+    margin: 3px 0 0;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--parchment-dk);
+    opacity: 0.85;
+  }
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+    padding: 20px 40px 8px;
+    max-width: 760px;
+  }
+  .curio {
+    background: var(--parchment);
+    background-image:
+      radial-gradient(circle at 11px 11px, #7a5c1f 3px, #c9ab6b 3.5px, transparent 5px),
+      radial-gradient(circle at calc(100% - 11px) 11px, #7a5c1f 3px, #c9ab6b 3.5px, transparent 5px),
+      radial-gradient(circle at 11px calc(100% - 11px), #7a5c1f 3px, #c9ab6b 3.5px, transparent 5px),
+      radial-gradient(circle at calc(100% - 11px) calc(100% - 11px), #7a5c1f 3px, #c9ab6b 3.5px, transparent 5px),
+      radial-gradient(ellipse at center, rgba(255,255,255,0.35) 0%, rgba(122,92,31,0.12) 100%);
+    border: 1.5px solid #6F5626;
+    border-radius: 10px;
+    padding: 16px 14px 14px;
+    text-align: center;
+    color: var(--ink);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 5px rgba(111, 86, 38, 0.16);
+    transition: transform 0.2s ease;
+  }
+  .curio .art { font-size: 52px; line-height: 1.2; filter: sepia(0.3); }
+  .curio h2 {
+    font-family: Copperplate, "Copperplate Gothic Light", serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    margin: 8px 0 9px;
+  }
+  .price {
+    display: inline-block;
+    background: linear-gradient(180deg, #d9b544, var(--brass-dk));
+    border: 1px solid #5c4410;
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #241C15;
+    margin-bottom: 11px;
+  }
+  .add {
+    display: block;
+    width: 100%;
+    border: 1px solid #2e5248;
+    border-radius: 6px;
+    padding: 9px 0;
+    font-family: Copperplate, "Copperplate Gothic Light", serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #F2E8D0;
+    background: linear-gradient(180deg, #5d9c8a, var(--verdigris) 55%, #3d6a5e);
+    cursor: pointer;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  }
+  .add:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+  footer {
+    padding: 14px 40px 20px;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--parchment-dk);
+    opacity: 0.75;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .curio { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="masthead"></div>
+  <header>
+    <h1 id="shop-sign">Cog &amp; Kettle</h1>
+    <p class="tagline">curiosities &amp; contraptions, est. 1888</p>
+  </header>
+  <main class="shelf" id="shelf">
+    <article class="curio" id="curio-chrono">
+      <div class="art">🕰️</div>
+      <h2>Pocket chronometer</h2>
+      <div class="price">3s</div>
+      <button class="add" type="button">Add to crate</button>
+    </article>
+    <article class="curio" id="curio-compass">
+      <div class="art">🧭</div>
+      <h2>Captain's compass</h2>
+      <div class="price">4s</div>
+      <button class="add" type="button">Add to crate</button>
+    </article>
+    <article class="curio" id="curio-tonic">
+      <div class="art">⚗️</div>
+      <h2>Aether tonic</h2>
+      <div class="price">5s</div>
+      <button class="add" type="button">Add to crate</button>
+    </article>
+  </main>
+  <footer>est. 1888 · brass polished daily</footer>
+</body>
+</html>
